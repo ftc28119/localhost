@@ -1,0 +1,26 @@
+# Netlify Configuration File
+
+# Functions directory
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Build settings
+[build]
+  command = "echo 'Build completed'"
+  publish = "."
+  functions = "netlify/functions"
+
+# HTTP headers for API endpoints
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type"
+
+# Redirects
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
