@@ -5,6 +5,9 @@ const path = require('path');
 // 数据存储文件
 const DATA_FILE = path.join(__dirname, 'data.json');
 
+// 页面访问密码（可以从配置文件读取，这里暂时硬编码）
+const PAGE_ACCESS_PASSWORD = 'ftc2025'; // 默认密码，可以在后续优化为可配置的
+
 // 读取所有数据
 function readData() {
     try {
@@ -89,6 +92,16 @@ function hashPassword(password) {
     return (hash >>> 0).toString(16);
 }
 
+// 生成随机邀请码函数
+function generateInviteCode(length = 8) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < length; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
 // 创建HTTP服务器
 const server = http.createServer((req, res) => {
     // 设置CORS头
@@ -144,11 +157,12 @@ const server = http.createServer((req, res) => {
                 if (teamNumber && !inviteCode) {
                     // 创建新团队或加入已有团队
                     if (!teams[teamNumber]) {
-                        // 创建新团队
+                        // 创建新团队并生成邀请码
                         teams[teamNumber] = {
                             teamNumber,
                             captain: username,
                             members: [username],
+                            inviteCode: generateInviteCode(),
                             createdAt: new Date().toISOString()
                         };
                         isCaptain = true;
@@ -157,12 +171,16 @@ const server = http.createServer((req, res) => {
                         if (!teams[teamNumber].members.includes(username)) {
                             teams[teamNumber].members.push(username);
                         }
+                        // 如果团队没有邀请码，生成一个
+                        if (!teams[teamNumber].inviteCode) {
+                            teams[teamNumber].inviteCode = generateInviteCode();
+                        }
                     }
                     team = teamNumber;
                     // 保存团队数据
                     saveTeams(teams);
                 } else if (inviteCode) {
-                    // 通过邀请码加入团队（这里简化处理，实际应该有更复杂的邀请码验证）
+                    // 通过邀请码加入团队
                     // 查找邀请码对应的团队
                     const teamEntry = Object.values(teams).find(t => t.inviteCode === inviteCode);
                     if (teamEntry) {
@@ -302,6 +320,272 @@ const server = http.createServer((req, res) => {
                     message: '登录成功', 
                     user: { username: user.username, team: user.team } 
                 }));
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
+        // 处理注销用户请求
+        else if (req.method === 'POST' && req.url === '/api/logout') {
+            try {
+                const data = JSON.parse(body);
+                const { username } = data;
+                
+                // 注销主要是前端操作（清除localStorage）
+                // 后端可以记录注销日志或执行其他清理操作
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    message: '注销成功' 
+                }));
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
+        // 处理刷新邀请码请求
+        else if (req.method === 'POST' && req.url === '/api/refresh-invite-code') {
+            try {
+                const data = JSON.parse(body);
+                const { username, teamNumber } = data;
+                
+                if (!username || !teamNumber) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户名和队伍编号不能为空' }));
+                    return;
+                }
+                
+                const teams = readTeams();
+                const team = teams[teamNumber];
+                
+                if (!team) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队伍不存在' }));
+                    return;
+                }
+                
+                // 验证用户是否是队长
+                if (team.captain !== username) {
+                    res.writeHead(403, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '只有队长可以刷新邀请码' }));
+                    return;
+                }
+                
+                // 生成新的邀请码
+                team.inviteCode = generateInviteCode();
+                
+                if (saveTeams(teams)) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: true, 
+                        message: '邀请码刷新成功',
+                        inviteCode: team.inviteCode
+                    }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+                }
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
+        // 获取队伍信息
+        else if (req.method === 'GET' && req.url.startsWith('/api/team/')) {
+            try {
+                const teamNumber = req.url.split('/').pop();
+                
+                if (!teamNumber) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队伍编号不能为空' }));
+                    return;
+                }
+                
+                const teams = readTeams();
+                const team = teams[teamNumber];
+                
+                if (!team) {
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队伍不存在' }));
+                    return;
+                }
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    team: {
+                        teamNumber: team.teamNumber,
+                        captain: team.captain,
+                        members: team.members,
+                        inviteCode: team.inviteCode,
+                        createdAt: team.createdAt
+                    }
+                }));
+            } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+            }
+        }
+        
+        // 退出队伍
+        else if (req.method === 'POST' && req.url === '/api/leave-team') {
+            try {
+                const data = JSON.parse(body);
+                const { username } = data;
+                
+                if (!username) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户名不能为空' }));
+                    return;
+                }
+                
+                const users = readUsers();
+                const teams = readTeams();
+                
+                const user = users[username];
+                if (!user || !user.team) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户没有加入任何队伍' }));
+                    return;
+                }
+                
+                const teamNumber = user.team;
+                const team = teams[teamNumber];
+                
+                if (!team) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队伍不存在' }));
+                    return;
+                }
+                
+                // 如果用户是队长，不能直接退出
+                if (team.captain === username) {
+                    res.writeHead(403, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队长不能直接退出队伍，请先转让队长职务' }));
+                    return;
+                }
+                
+                // 从队伍成员中移除用户
+                team.members = team.members.filter(member => member !== username);
+                
+                // 更新用户的队伍信息
+                user.team = null;
+                user.isCaptain = false;
+                
+                if (saveTeams(teams) && saveUsers(users)) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: true, 
+                        message: '成功退出队伍' 
+                    }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+                }
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
+        // 移除队伍成员（队长权限）
+        else if (req.method === 'POST' && req.url === '/api/remove-team-member') {
+            try {
+                const data = JSON.parse(body);
+                const { captainUsername, teamNumber, memberUsername } = data;
+                
+                if (!captainUsername || !teamNumber || !memberUsername) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队长用户名、队伍编号和成员用户名不能为空' }));
+                    return;
+                }
+                
+                const teams = readTeams();
+                const users = readUsers();
+                
+                const team = teams[teamNumber];
+                if (!team) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队伍不存在' }));
+                    return;
+                }
+                
+                // 验证用户是否是队长
+                if (team.captain !== captainUsername) {
+                    res.writeHead(403, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '只有队长可以移除队员' }));
+                    return;
+                }
+                
+                // 队长不能移除自己
+                if (captainUsername === memberUsername) {
+                    res.writeHead(403, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队长不能移除自己' }));
+                    return;
+                }
+                
+                // 检查成员是否在队伍中
+                if (!team.members.includes(memberUsername)) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '该用户不是队伍成员' }));
+                    return;
+                }
+                
+                // 从队伍成员中移除用户
+                team.members = team.members.filter(member => member !== memberUsername);
+                
+                // 更新用户的队伍信息
+                const memberUser = users[memberUsername];
+                if (memberUser) {
+                    memberUser.team = null;
+                    memberUser.isCaptain = false;
+                }
+                
+                if (saveTeams(teams) && saveUsers(users)) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: true, 
+                        message: '成功移除队伍成员' 
+                    }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+                }
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
+        // 验证页面访问密码
+        else if (req.method === 'POST' && req.url === '/api/verify-password') {
+            try {
+                const data = JSON.parse(body);
+                const { password } = data;
+                
+                if (!password) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '密码不能为空' }));
+                    return;
+                }
+                
+                if (password === PAGE_ACCESS_PASSWORD) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: true, 
+                        message: '密码验证成功' 
+                    }));
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: false, 
+                        message: '密码错误' 
+                    }));
+                }
             } catch (error) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
