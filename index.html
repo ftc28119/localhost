@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            min-width: 200px;
+            flex: 1;
+        }
+        
+        .stat-card h3 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #7f8c8d;
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            font-size: 1em;
+            cursor: pointer;
+            color: #7f8c8d;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn.active {
+            color: #2c3e50;
+            border-bottom-color: #2c3e50;
+        }
+        
+        .tab-content {
+            display: none;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        tr:hover {
+            background-color: #f5f7fa;
+        }
+        
+        .refresh-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .badge-captain {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .badge-member {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FTC 数据管理后台</h1>
+            <p>实时监控和管理所有用户、团队和侦察数据</p>
+        </header>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>总用户数</h3>
+                <div class="stat-number" id="totalUsers">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>总团队数</h3>
+                <div class="stat-number" id="totalTeams">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>总侦察数据</h3>
+                <div class="stat-number" id="totalScoutingData">0</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('users')">用户管理</button>
+            <button class="tab-btn" onclick="showTab('teams')">团队管理</button>
+            <button class="tab-btn" onclick="showTab('scouting')">侦察数据</button>
+        </div>
+        
+        <div id="users" class="tab-content active">
+            <button class="refresh-btn" onclick="loadData()">刷新数据</button>
+            <div class="loading" id="usersLoading">加载中...</div>
+            <div id="usersTableContainer">
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>所属团队</th>
+                            <th>角色</th>
+                            <th>创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="teams" class="tab-content">
+            <button class="refresh-btn" onclick="loadData()">刷新数据</button>
+            <div class="loading" id="teamsLoading">加载中...</div>
+            <div id="teamsTableContainer">
+                <table id="teamsTable">
+                    <thead>
+                        <tr>
+                            <th>团队编号</th>
+                            <th>队长</th>
+                            <th>队员数量</th>
+                            <th>队员列表</th>
+                            <th>创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teamsTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="scouting" class="tab-content">
+            <button class="refresh-btn" onclick="loadData()">刷新数据</button>
+            <div class="loading" id="scoutingLoading">加载中...</div>
+            <div id="scoutingTableContainer">
+                <table id="scoutingTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户</th>
+                            <th>团队</th>
+                            <th>比赛名称</th>
+                            <th>比赛类型</th>
+                            <th>比赛编号</th>
+                            <th>提交时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scoutingTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 切换标签页
+        function showTab(tabName) {
+            // 隐藏所有标签内容
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // 移除所有标签按钮的激活状态
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+            
+            // 显示当前标签内容
+            document.getElementById(tabName).classList.add('active');
+            
+            // 设置当前标签按钮为激活状态
+            event.target.classList.add('active');
+        }
+        
+        // 加载所有数据
+        async function loadData() {
+            try {
+                // 显示加载状态
+                document.getElementById('usersLoading').style.display = 'block';
+                document.getElementById('teamsLoading').style.display = 'block';
+                document.getElementById('scoutingLoading').style.display = 'block';
+                
+                // 从API获取数据
+                const response = await fetch('http://localhost:3001/api/admin/data');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 更新统计信息
+                    updateStats(data.users, data.teams, data.scoutingData);
+                    
+                    // 渲染用户表格
+                    renderUsersTable(data.users);
+                    
+                    // 渲染团队表格
+                    renderTeamsTable(data.teams);
+                    
+                    // 渲染侦察数据表格
+                    renderScoutingTable(data.scoutingData);
+                    
+                    // 隐藏加载状态
+                    document.getElementById('usersLoading').style.display = 'none';
+                    document.getElementById('teamsLoading').style.display = 'none';
+                    document.getElementById('scoutingLoading').style.display = 'none';
+                } else {
+                    showError('加载数据失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('加载数据出错:', error);
+                showError('加载数据出错: ' + error.message);
+            }
+        }
+        
+        // 更新统计信息
+        function updateStats(users, teams, scoutingData) {
+            document.getElementById('totalUsers').textContent = Object.keys(users).length;
+            document.getElementById('totalTeams').textContent = Object.keys(teams).length;
+            document.getElementById('totalScoutingData').textContent = Object.keys(scoutingData).length;
+        }
+        
+        // 渲染用户表格
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            
+            Object.values(users).forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.username}</td>
+                    <td>${user.team || '无'}</td>
+                    <td><span class="badge ${user.isCaptain ? 'badge-captain' : 'badge-member'}">${user.isCaptain ? '队长' : '队员'}</span></td>
+                    <td>${new Date(user.createdAt).toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 渲染团队表格
+        function renderTeamsTable(teams) {
+            const tbody = document.getElementById('teamsTableBody');
+            tbody.innerHTML = '';
+            
+            Object.values(teams).forEach(team => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${team.teamNumber}</td>
+                    <td>${team.captain}</td>
+                    <td>${team.members.length}</td>
+                    <td>${team.members.join(', ')}</td>
+                    <td>${new Date(team.createdAt).toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 渲染侦察数据表格
+        function renderScoutingTable(scoutingData) {
+            const tbody = document.getElementById('scoutingTableBody');
+            tbody.innerHTML = '';
+            
+            Object.values(scoutingData).forEach(data => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${data.id}</td>
+                    <td>${data.userId}</td>
+                    <td>${data.teamNumber}</td>
+                    <td>${data.matchName}</td>
+                    <td>${data.matchType}</td>
+                    <td>${data.matchNumber}</td>
+                    <td>${new Date(data.syncedAt).toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            
+            // 在所有标签页中显示错误
+            ['users', 'teams', 'scouting'].forEach(tab => {
+                const tabContent = document.getElementById(tab);
+                tabContent.insertBefore(errorDiv.cloneNode(true), tabContent.firstChild);
+            });
+        }
+        
+        // 页面加载时自动加载数据
+        window.addEventListener('load', loadData);
+        
+        // 设置定时刷新（每30秒）
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>
