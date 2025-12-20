@@ -592,6 +592,142 @@ const server = http.createServer((req, res) => {
             }
         }
         
+        // 解散队伍功能
+        else if (req.method === 'POST' && req.url === '/api/dissolve-team') {
+            try {
+                const data = JSON.parse(body);
+                const { username, teamNumber } = data;
+                
+                if (!username || !teamNumber) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户名和队伍编号不能为空' }));
+                    return;
+                }
+                
+                const teams = readTeams();
+                const users = readUsers();
+                
+                const team = teams[teamNumber];
+                if (!team) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队伍不存在' }));
+                    return;
+                }
+                
+                // 验证用户是否是队长
+                if (team.captain !== username) {
+                    res.writeHead(403, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '只有队长可以解散队伍' }));
+                    return;
+                }
+                
+                // 将队伍中的所有成员的队伍信息重置
+                team.members.forEach(member => {
+                    const user = users[member];
+                    if (user) {
+                        user.team = null;
+                        user.isCaptain = false;
+                    }
+                });
+                
+                // 删除队伍
+                delete teams[teamNumber];
+                
+                if (saveTeams(teams) && saveUsers(users)) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: true, 
+                        message: '队伍解散成功' 
+                    }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+                }
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
+        // 后端注销用户功能
+        else if (req.method === 'POST' && req.url === '/api/delete-user') {
+            try {
+                const data = JSON.parse(body);
+                const { username, password } = data;
+                
+                if (!username || !password) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户名和密码不能为空' }));
+                    return;
+                }
+                
+                const users = readUsers();
+                const teams = readTeams();
+                
+                const user = users[username];
+                if (!user) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户不存在' }));
+                    return;
+                }
+                
+                // 验证密码
+                const hashedPassword = hashPassword(password);
+                if (user.password !== hashedPassword) {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '密码错误' }));
+                    return;
+                }
+                
+                // 如果用户在队伍中，从队伍中移除
+                if (user.team) {
+                    const teamNumber = user.team;
+                    const team = teams[teamNumber];
+                    if (team) {
+                        // 如果用户是队长，需要重新指定队长或解散队伍
+                        if (team.captain === username) {
+                            if (team.members.length === 1) {
+                                // 如果是唯一成员，删除队伍
+                                delete teams[teamNumber];
+                            } else {
+                                // 否则，将队长职位转移给下一个成员
+                                team.captain = team.members.find(member => member !== username);
+                                // 更新该成员的isCaptain状态
+                                const newCaptain = users[team.captain];
+                                if (newCaptain) {
+                                    newCaptain.isCaptain = true;
+                                }
+                                // 从队伍成员中移除用户
+                                team.members = team.members.filter(member => member !== username);
+                            }
+                            saveTeams(teams);
+                        } else {
+                            // 如果用户不是队长，直接从队伍成员中移除
+                            team.members = team.members.filter(member => member !== username);
+                            saveTeams(teams);
+                        }
+                    }
+                }
+                
+                // 删除用户
+                delete users[username];
+                
+                if (saveUsers(users)) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: true, 
+                        message: '用户注销成功' 
+                    }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+                }
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
         // 处理静态文件请求
         else if (req.method === 'GET' && req.url.endsWith('.html')) {
             const fileName = req.url.substring(1); // 移除开头的斜杠
