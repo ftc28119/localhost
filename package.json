@@ -1,0 +1,21 @@
+{
+  "name": "ftc-scout-cloud-sync",
+  "version": "1.0.0",
+  "description": "FTC Scout Cloud Sync Service - https://28119nethost.netlify.app",
+  "main": "netlify/functions/api.js",
+  "scripts": {
+    "start": "netlify dev",
+    "dev": "netlify dev",
+    "server": "node server.js",
+    "deploy": "netlify deploy --prod"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "netlify-cli": "^17.0.0"
+  }
+}
