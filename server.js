@@ -34,7 +34,10 @@ function readData() {
 // 保存所有数据
 function saveData(data) {
     try {
+        console.log('保存数据到文件:', DATA_FILE);
+        console.log('要保存的数据:', data);
         fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+        console.log('数据保存成功');
         return true;
     } catch (error) {
         console.error('保存数据失败:', error);
@@ -50,9 +53,12 @@ function readUsers() {
 
 // 保存用户数据
 function saveUsers(users) {
+    console.log('保存用户数据:', users);
     const data = readData();
     data.users = users;
-    return saveData(data);
+    const result = saveData(data);
+    console.log('保存用户数据结果:', result);
+    return result;
 }
 
 // 读取团队数据
@@ -126,7 +132,9 @@ const server = http.createServer((req, res) => {
         // 处理注册请求
         if (req.method === 'POST' && req.url === '/api/register') {
             try {
+                console.log('注册请求体:', body);
                 const data = JSON.parse(body);
+                console.log('解析后的请求数据:', data);
                 const { username, password, teamNumber, inviteCode } = data;
                 
                 if (!username || !password) {
@@ -138,6 +146,12 @@ const server = http.createServer((req, res) => {
                 if (password.length < 6) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ success: false, message: '密码长度不能少于6位' }));
+                    return;
+                }
+                
+                if (!teamNumber || !teamNumber.trim()) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '请输入队伍编号，必须加入或创建队伍' }));
                     return;
                 }
                 
@@ -154,7 +168,24 @@ const server = http.createServer((req, res) => {
                 let isCaptain = false;
                 
                 // 处理团队创建或加入
-                if (teamNumber && !inviteCode) {
+                if (inviteCode && inviteCode.trim()) {
+                    // 通过邀请码加入团队
+                    // 查找邀请码对应的团队
+                    const teamEntry = Object.values(teams).find(t => t.inviteCode === inviteCode);
+                    if (teamEntry) {
+                        team = teamEntry.teamNumber;
+                        if (!teamEntry.members.includes(username)) {
+                            teamEntry.members.push(username);
+                        }
+                        // 保存团队数据
+                        saveTeams(teams);
+                    } else {
+                        // 邀请码无效，返回错误
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, message: '无效的邀请码' }));
+                        return;
+                    }
+                } else {
                     // 创建新团队或加入已有团队
                     if (!teams[teamNumber]) {
                         // 创建新团队并生成邀请码
@@ -179,42 +210,46 @@ const server = http.createServer((req, res) => {
                     team = teamNumber;
                     // 保存团队数据
                     saveTeams(teams);
-                } else if (inviteCode) {
-                    // 通过邀请码加入团队
-                    // 查找邀请码对应的团队
-                    const teamEntry = Object.values(teams).find(t => t.inviteCode === inviteCode);
-                    if (teamEntry) {
-                        team = teamEntry.teamNumber;
-                        if (!teamEntry.members.includes(username)) {
-                            teamEntry.members.push(username);
-                        }
-                        // 保存团队数据
-                        saveTeams(teams);
-                    }
                 }
                 
+                console.log('准备创建新用户');
                 // 创建新用户
+                const hashedPassword = hashPassword(password);
+                console.log('密码哈希后:', hashedPassword);
+                
                 const newUser = {
                     username,
-                    password: hashPassword(password),
+                    password: hashedPassword,
                     team,
                     isCaptain,
                     createdAt: new Date().toISOString()
                 };
                 
-                users[username] = newUser;
+                console.log('新用户对象:', newUser);
                 
-                if (saveUsers(users)) {
+                // 保存用户数据
+                users[username] = newUser;
+                const saveResult = saveUsers(users);
+                console.log('保存用户结果:', saveResult);
+                
+                if (saveResult) {
+                    // 数据保存成功，返回响应
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ success: true, message: '注册成功', user: { username: newUser.username, team: newUser.team, isCaptain: newUser.isCaptain } }));
+                    console.log('注册响应已发送');
                 } else {
+                    // 数据保存失败，返回错误响应
                     res.writeHead(500, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+                    res.end(JSON.stringify({ success: false, message: '注册失败，数据保存错误' }));
+                    console.log('注册失败，数据保存错误');
                 }
             } catch (error) {
                 console.error('注册错误:', error);
+                console.error('错误类型:', error.name);
+                console.error('错误消息:', error.message);
+                console.error('错误堆栈:', error.stack);
                 res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+                res.end(JSON.stringify({ success: false, message: '请求格式错误', error: error.message }));
             }
         }
         
@@ -265,7 +300,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理获取所有数据请求（用于后台管理）
-        else if (req.method === 'GET' && req.url === '/api/admin/data') {
+        else if (req.method === 'GET' && req.url.startsWith('/api/admin/data')) {
             try {
                 const users = readUsers();
                 const teams = readTeams();
@@ -302,14 +337,14 @@ const server = http.createServer((req, res) => {
                 
                 if (!user) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, message: '用户名或密码错误' }));
+                    res.end(JSON.stringify({ success: false, message: '用户不存在' }));
                     return;
                 }
                 
                 const hashedPassword = hashPassword(password);
                 if (user.password !== hashedPassword) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, message: '用户名或密码错误' }));
+                    res.end(JSON.stringify({ success: false, message: '密码错误' }));
                     return;
                 }
                 
@@ -329,8 +364,16 @@ const server = http.createServer((req, res) => {
         // 处理注销用户请求
         else if (req.method === 'POST' && req.url === '/api/logout') {
             try {
-                const data = JSON.parse(body);
-                const { username } = data;
+                let username = null;
+                
+                // 只有当请求体不为空时才尝试解析
+                if (body.trim()) {
+                    const data = JSON.parse(body);
+                    username = data.username;
+                }
+                
+                // 记录注销日志
+                console.log(`用户注销: ${username || '未知用户'}`);
                 
                 // 注销主要是前端操作（清除localStorage）
                 // 后端可以记录注销日志或执行其他清理操作
@@ -341,8 +384,13 @@ const server = http.createServer((req, res) => {
                     message: '注销成功' 
                 }));
             } catch (error) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+                // 如果请求格式错误，仍然返回成功响应，因为注销主要是前端操作
+                console.error('注销请求处理错误:', error);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    message: '注销成功' 
+                }));
             }
         }
         
@@ -573,7 +621,7 @@ const server = http.createServer((req, res) => {
                     return;
                 }
                 
-                if (password === PAGE_ACCESS_PASSWORD) {
+                if (hashPassword(password) === hashPassword(PAGE_ACCESS_PASSWORD)) {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ 
                         success: true, 
@@ -649,6 +697,61 @@ const server = http.createServer((req, res) => {
             }
         }
         
+        // 更改密码功能
+        else if (req.method === 'POST' && req.url === '/api/change-password') {
+            try {
+                const data = JSON.parse(body);
+                const { username, currentPassword, newPassword } = data;
+                
+                if (!username || !currentPassword || !newPassword) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户名、当前密码和新密码不能为空' }));
+                    return;
+                }
+                
+                if (newPassword.length < 6) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '新密码长度不能少于6位' }));
+                    return;
+                }
+                
+                const users = readUsers();
+                const user = users[username];
+                
+                if (!user) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户不存在' }));
+                    return;
+                }
+                
+                // 验证当前密码
+                const hashedCurrentPassword = hashPassword(currentPassword);
+                if (user.password !== hashedCurrentPassword) {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '当前密码错误' }));
+                    return;
+                }
+                
+                // 密码验证通过，更新为新密码
+                const hashedNewPassword = hashPassword(newPassword);
+                user.password = hashedNewPassword;
+                
+                if (saveUsers(users)) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: true, 
+                        message: '密码更改成功' 
+                    }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+                }
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
         // 后端注销用户功能
         else if (req.method === 'POST' && req.url === '/api/delete-user') {
             try {
@@ -676,6 +779,77 @@ const server = http.createServer((req, res) => {
                 if (user.password !== hashedPassword) {
                     res.writeHead(401, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ success: false, message: '密码错误' }));
+                    return;
+                }
+                
+                // 如果用户在队伍中，从队伍中移除
+                if (user.team) {
+                    const teamNumber = user.team;
+                    const team = teams[teamNumber];
+                    if (team) {
+                        // 如果用户是队长，需要重新指定队长或解散队伍
+                        if (team.captain === username) {
+                            if (team.members.length === 1) {
+                                // 如果是唯一成员，删除队伍
+                                delete teams[teamNumber];
+                            } else {
+                                // 否则，将队长职位转移给下一个成员
+                                team.captain = team.members.find(member => member !== username);
+                                // 更新该成员的isCaptain状态
+                                const newCaptain = users[team.captain];
+                                if (newCaptain) {
+                                    newCaptain.isCaptain = true;
+                                }
+                                // 从队伍成员中移除用户
+                                team.members = team.members.filter(member => member !== username);
+                            }
+                            saveTeams(teams);
+                        } else {
+                            // 如果用户不是队长，直接从队伍成员中移除
+                            team.members = team.members.filter(member => member !== username);
+                            saveTeams(teams);
+                        }
+                    }
+                }
+                
+                // 删除用户
+                delete users[username];
+                
+                if (saveUsers(users)) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: true, 
+                        message: '用户注销成功' 
+                    }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+                }
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
+        // 管理员删除用户功能
+        else if (req.method === 'POST' && req.url === '/api/admin/delete-user') {
+            try {
+                const data = JSON.parse(body);
+                const { username } = data;
+                
+                if (!username) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户名不能为空' }));
+                    return;
+                }
+                
+                const users = readUsers();
+                const teams = readTeams();
+                
+                const user = users[username];
+                if (!user) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户不存在' }));
                     return;
                 }
                 

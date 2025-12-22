@@ -211,6 +211,7 @@
                             <th>所属团队</th>
                             <th>角色</th>
                             <th>创建时间</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
@@ -337,6 +338,7 @@
                     <td>${user.team || '无'}</td>
                     <td><span class="badge ${user.isCaptain ? 'badge-captain' : 'badge-member'}">${user.isCaptain ? '队长' : '队员'}</span></td>
                     <td>${new Date(user.createdAt).toLocaleString()}</td>
+                    <td><button onclick="adminDeleteUser('${user.username}')">注销用户</button></td>
                 `;
                 tbody.appendChild(row);
             });
@@ -395,6 +397,32 @@
         
         // 页面加载时自动加载数据
         window.addEventListener('load', loadData);
+        
+        // 管理员删除用户函数
+        async function adminDeleteUser(username) {
+            if (confirm(`确定要注销用户 ${username} 吗？此操作不可恢复！`)) {
+                try {
+                    const response = await fetch('http://localhost:3001/api/admin/delete-user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username })
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        alert(`用户 ${username} 注销成功`);
+                        loadData(); // 重新加载数据以更新表格
+                    } else {
+                        alert(`注销失败：${result.message}`);
+                    }
+                } catch (error) {
+                    console.error('删除用户出错:', error);
+                    alert('注销用户时发生错误，请稍后重试');
+                }
+            }
+        }
         
         // 设置定时刷新（每30秒）
         setInterval(loadData, 30000);
