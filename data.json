@@ -1,30 +1,166 @@
 {
   "users": {
-    "lfk": {
-      "username": "lfk",
-      "password": "e3d4c17",
+    "刘丰恺": {
+      "username": "刘丰恺",
+      "password": "56760663",
       "team": "28119",
       "isCaptain": true,
-      "createdAt": "2025-12-22T13:56:28.133Z"
+      "createdAt": "2025-12-22T14:31:33.628Z"
     },
-    "wjh": {
-      "username": "wjh",
+    "张墨航": {
+      "username": "张墨航",
       "password": "56760663",
       "team": "28119",
       "isCaptain": false,
-      "createdAt": "2025-12-22T13:57:13.680Z"
+      "createdAt": "2025-12-22T14:33:20.217Z"
+    },
+    "侯昊霖": {
+      "username": "侯昊霖",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:33:31.674Z"
+    },
+    "韩佳航": {
+      "username": "韩佳航",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:33:46.289Z"
+    },
+    "刘丰瑞": {
+      "username": "刘丰瑞",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:33:58.130Z"
+    },
+    "马国然": {
+      "username": "马国然",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:34:09.177Z"
+    },
+    "曹家硕": {
+      "username": "曹家硕",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:34:21.201Z"
+    },
+    "王力": {
+      "username": "王力",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:34:32.115Z"
+    },
+    "张李沄灿": {
+      "username": "张李沄灿",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:34:44.829Z"
+    },
+    "南节山": {
+      "username": "南节山",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:35:00.396Z"
+    },
+    "梁易之": {
+      "username": "梁易之",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:35:25.859Z"
+    },
+    "李佳霓": {
+      "username": "李佳霓",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:35:44.486Z"
+    },
+    "顾家琪": {
+      "username": "顾家琪",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:36:07.096Z"
+    },
+    "莲子萱": {
+      "username": "莲子萱",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:36:24.049Z"
+    },
+    "朱奕辰": {
+      "username": "朱奕辰",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:36:54.700Z"
+    },
+    "钟玉燊": {
+      "username": "钟玉燊",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:37:22.321Z"
+    },
+    "高境阳": {
+      "username": "高境阳",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:37:53.860Z"
+    },
+    "张心怡": {
+      "username": "张心怡",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T14:38:39.676Z"
+    },
+    "万家豪": {
+      "username": "万家豪",
+      "password": "56760663",
+      "team": "28119",
+      "isCaptain": false,
+      "createdAt": "2025-12-22T15:01:56.718Z"
     }
   },
   "teams": {
     "28119": {
       "teamNumber": "28119",
-      "captain": "lfk",
+      "captain": "刘丰恺",
       "members": [
-        "lfk",
-        "wjh"
+        "刘丰恺",
+        "张墨航",
+        "侯昊霖",
+        "韩佳航",
+        "刘丰瑞",
+        "马国然",
+        "曹家硕",
+        "王力",
+        "张李沄灿",
+        "南节山",
+        "梁易之",
+        "李佳霓",
+        "顾家琪",
+        "莲子萱",
+        "朱奕辰",
+        "钟玉燊",
+        "高境阳",
+        "张心怡",
+        "万家豪"
       ],
-      "inviteCode": "1RGUXN2Z",
-      "createdAt": "2025-12-22T13:56:28.131Z"
+      "inviteCode": "JXQO75ZF",
+      "createdAt": "2025-12-22T14:31:33.626Z"
     }
   },
   "scoutingData": {}

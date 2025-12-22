@@ -8,6 +8,9 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 // 页面访问密码（可以从配置文件读取，这里暂时硬编码）
 const PAGE_ACCESS_PASSWORD = 'ftc2025'; // 默认密码，可以在后续优化为可配置的
 
+// 管理员访问密码
+const ADMIN_PASSWORD = 'admin28119'; // 默认管理员密码，可以在后续优化为可配置的
+
 // 读取所有数据
 function readData() {
     try {
@@ -302,6 +305,17 @@ const server = http.createServer((req, res) => {
         // 处理获取所有数据请求（用于后台管理）
         else if (req.method === 'GET' && req.url.startsWith('/api/admin/data')) {
             try {
+                // 从URL查询参数中获取管理员密码
+                const url = new URL(req.url, 'http://localhost:3001');
+                const password = url.searchParams.get('password');
+                
+                // 验证管理员密码
+                if (!password || password !== ADMIN_PASSWORD) {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '管理员密码错误' }));
+                    return;
+                }
+                
                 const users = readUsers();
                 const teams = readTeams();
                 const scoutingData = readScoutingData();
@@ -752,6 +766,36 @@ const server = http.createServer((req, res) => {
             }
         }
         
+        // 管理员密码验证功能
+        else if (req.method === 'POST' && req.url === '/api/verify-admin-password') {
+            try {
+                const data = JSON.parse(body);
+                const { password } = data;
+                
+                if (!password) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '管理员密码不能为空' }));
+                    return;
+                }
+                
+                // 验证管理员密码
+                // 注意：这里使用明文比较，实际应用中应该使用加密比较
+                if (password === ADMIN_PASSWORD) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        success: true, 
+                        message: '管理员密码验证通过' 
+                    }));
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '管理员密码错误' }));
+                }
+            } catch (error) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
         // 后端注销用户功能
         else if (req.method === 'POST' && req.url === '/api/delete-user') {
             try {
@@ -835,7 +879,14 @@ const server = http.createServer((req, res) => {
         else if (req.method === 'POST' && req.url === '/api/admin/delete-user') {
             try {
                 const data = JSON.parse(body);
-                const { username } = data;
+                const { username, password } = data;
+                
+                // 验证管理员密码
+                if (!password || password !== ADMIN_PASSWORD) {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '管理员密码错误' }));
+                    return;
+                }
                 
                 if (!username) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });

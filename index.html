@@ -264,6 +264,127 @@
     </div>
     
     <script>
+        // 管理员密码全局变量
+        let adminPassword = null;
+        
+        // 显示密码验证表单
+        function showPasswordVerification() {
+            const container = document.createElement('div');
+            container.style.position = 'fixed';
+            container.style.top = '0';
+            container.style.left = '0';
+            container.style.width = '100%';
+            container.style.height = '100%';
+            container.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            container.style.display = 'flex';
+            container.style.justifyContent = 'center';
+            container.style.alignItems = 'center';
+            container.style.zIndex = '10000';
+            container.id = 'passwordVerificationContainer';
+            
+            const form = document.createElement('div');
+            form.style.backgroundColor = 'white';
+            form.style.padding = '30px';
+            form.style.borderRadius = '8px';
+            form.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.3)';
+            form.style.width = '100%';
+            form.style.maxWidth = '400px';
+            
+            const title = document.createElement('h2');
+            title.textContent = '管理员密码验证';
+            title.style.marginBottom = '20px';
+            title.style.color = '#2c3e50';
+            
+            const passwordInput = document.createElement('input');
+            passwordInput.type = 'password';
+            passwordInput.placeholder = '请输入管理员密码';
+            passwordInput.style.width = '100%';
+            passwordInput.style.padding = '10px';
+            passwordInput.style.marginBottom = '10px';
+            passwordInput.style.border = '1px solid #ddd';
+            passwordInput.style.borderRadius = '4px';
+            passwordInput.style.fontSize = '16px';
+            passwordInput.id = 'adminPasswordInput';
+            
+            const errorMsg = document.createElement('div');
+            errorMsg.style.color = 'red';
+            errorMsg.style.marginBottom = '20px';
+            errorMsg.style.fontSize = '14px';
+            errorMsg.id = 'passwordErrorMsg';
+            
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.justifyContent = 'flex-end';
+            buttonContainer.style.gap = '10px';
+            
+            const verifyBtn = document.createElement('button');
+            verifyBtn.textContent = '验证';
+            verifyBtn.style.padding = '10px 20px';
+            verifyBtn.style.backgroundColor = '#27ae60';
+            verifyBtn.style.color = 'white';
+            verifyBtn.style.border = 'none';
+            verifyBtn.style.borderRadius = '4px';
+            verifyBtn.style.cursor = 'pointer';
+            verifyBtn.style.fontSize = '16px';
+            verifyBtn.onclick = async () => {
+                const password = passwordInput.value;
+                
+                if (!password) {
+                    errorMsg.textContent = '管理员密码不能为空';
+                    return;
+                }
+                
+                try {
+                    // 验证密码
+                    const response = await fetch('http://localhost:3001/api/verify-admin-password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ password })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        adminPassword = password;
+                        document.body.removeChild(container);
+                        loadData(); // 验证成功后加载数据
+                    } else {
+                        errorMsg.textContent = result.message || '管理员密码错误';
+                    }
+                } catch (error) {
+                    console.error('验证密码出错:', error);
+                    errorMsg.textContent = '验证密码时发生错误，请稍后重试';
+                }
+            };
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = '取消';
+            cancelBtn.style.padding = '10px 20px';
+            cancelBtn.style.backgroundColor = '#95a5a6';
+            cancelBtn.style.color = 'white';
+            cancelBtn.style.border = 'none';
+            cancelBtn.style.borderRadius = '4px';
+            cancelBtn.style.cursor = 'pointer';
+            cancelBtn.style.fontSize = '16px';
+            cancelBtn.onclick = () => {
+                document.body.removeChild(container);
+                // 可以选择跳转到其他页面
+            };
+            
+            form.appendChild(title);
+            form.appendChild(passwordInput);
+            form.appendChild(errorMsg);
+            buttonContainer.appendChild(cancelBtn);
+            buttonContainer.appendChild(verifyBtn);
+            form.appendChild(buttonContainer);
+            container.appendChild(form);
+            
+            document.body.appendChild(container);
+            passwordInput.focus();
+        }
+        
         // 切换标签页
         function showTab(tabName) {
             // 隐藏所有标签内容
@@ -284,13 +405,19 @@
         // 加载所有数据
         async function loadData() {
             try {
+                // 检查是否有管理员密码
+                if (!adminPassword) {
+                    showPasswordVerification();
+                    return;
+                }
+                
                 // 显示加载状态
                 document.getElementById('usersLoading').style.display = 'block';
                 document.getElementById('teamsLoading').style.display = 'block';
                 document.getElementById('scoutingLoading').style.display = 'block';
                 
-                // 从API获取数据
-                const response = await fetch('http://localhost:3001/api/admin/data');
+                // 从API获取数据，传递管理员密码
+                const response = await fetch(`http://localhost:3001/api/admin/data?password=${encodeURIComponent(adminPassword)}`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -395,11 +522,17 @@
             });
         }
         
-        // 页面加载时自动加载数据
-        window.addEventListener('load', loadData);
+        // 页面加载时自动显示密码验证
+        window.addEventListener('load', showPasswordVerification);
         
         // 管理员删除用户函数
         async function adminDeleteUser(username) {
+            // 检查是否有管理员密码
+            if (!adminPassword) {
+                showPasswordVerification();
+                return;
+            }
+            
             if (confirm(`确定要注销用户 ${username} 吗？此操作不可恢复！`)) {
                 try {
                     const response = await fetch('http://localhost:3001/api/admin/delete-user', {
@@ -407,7 +540,7 @@
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ username })
+                        body: JSON.stringify({ username, password: adminPassword })
                     });
                     
                     const result = await response.json();
