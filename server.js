@@ -1050,7 +1050,7 @@ const server = http.createServer((req, res) => {
 });
 
 // 启动服务器
-const PORT = 3001;
+const PORT = 18923;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`服务器运行在 http://0.0.0.0:${PORT}`);
     console.log(`可以通过 http://localhost:${PORT} 或 http://<本机IP地址>:${PORT} 访问`);
