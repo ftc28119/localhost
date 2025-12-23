@@ -152,10 +152,13 @@ const server = http.createServer((req, res) => {
                     return;
                 }
                 
-                if (!teamNumber || !teamNumber.trim()) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, message: '请输入队伍编号，必须加入或创建队伍' }));
-                    return;
+                // 只有在没有邀请码的情况下，才需要验证队伍编号
+                if (!inviteCode || !inviteCode.trim()) {
+                    if (!teamNumber || !teamNumber.trim()) {
+                        res.writeHead(400, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, message: '请输入队伍编号，必须加入或创建队伍' }));
+                        return;
+                    }
                 }
                 
                 const users = readUsers();
@@ -299,6 +302,54 @@ const server = http.createServer((req, res) => {
                 console.error('保存侦察数据错误:', error);
                 res.writeHead(400, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, message: '请求格式错误' }));
+            }
+        }
+        
+        // 处理获取侦察数据请求
+        else if (req.method === 'GET' && req.url === '/api/scouting-data') {
+            try {
+                const scoutingData = readScoutingData();
+                
+                // 将对象转换为数组返回
+                const scoutingDataArray = Object.values(scoutingData);
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(scoutingDataArray));
+            } catch (error) {
+                console.error('获取侦察数据错误:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '获取数据失败', error: error.message }));
+            }
+        }
+        
+        // 处理删除侦察数据请求
+        else if (req.method === 'DELETE' && req.url.startsWith('/api/scouting-data/')) {
+            try {
+                const id = decodeURIComponent(req.url.split('/').pop());
+                if (!id) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '缺少数据ID' }));
+                    return;
+                }
+                
+                const scoutingData = readScoutingData();
+                if (scoutingData[id]) {
+                    delete scoutingData[id];
+                    if (saveScoutingData(scoutingData)) {
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: true, message: '数据删除成功' }));
+                    } else {
+                        res.writeHead(500, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, message: '数据删除失败' }));
+                    }
+                } else {
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '数据不存在' }));
+                }
+            } catch (error) {
+                console.error('删除侦察数据错误:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '删除数据失败', error: error.message }));
             }
         }
         
@@ -1000,6 +1051,7 @@ const server = http.createServer((req, res) => {
 
 // 启动服务器
 const PORT = 3001;
-server.listen(PORT, () => {
-    console.log(`服务器运行在 http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`服务器运行在 http://0.0.0.0:${PORT}`);
+    console.log(`可以通过 http://localhost:${PORT} 或 http://<本机IP地址>:${PORT} 访问`);
 });
