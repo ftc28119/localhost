@@ -336,7 +336,7 @@
                 
                 try {
                     // 验证密码
-                    const response = await fetch('http://localhost:18923/api/verify-admin-password', {
+                    const response = await fetch('/api/verify-admin-password', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -417,7 +417,7 @@
                 document.getElementById('scoutingLoading').style.display = 'block';
                 
                 // 从API获取数据，传递管理员密码
-                const response = await fetch(`http://localhost:18923/api/admin/data?password=${encodeURIComponent(adminPassword)}`);
+                const response = await fetch(`/api/admin/data?password=${encodeURIComponent(adminPassword)}`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -535,7 +535,7 @@
             
             if (confirm(`确定要注销用户 ${username} 吗？此操作不可恢复！`)) {
                 try {
-                    const response = await fetch('http://localhost:18923/api/admin/delete-user', {
+                    const response = await fetch('/api/admin/delete-user', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
