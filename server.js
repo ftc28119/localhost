@@ -270,7 +270,7 @@ const server = http.createServer((req, res) => {
         else if (req.method === 'POST' && req.url === '/api/scouting-data') {
             try {
                 const data = JSON.parse(body);
-                const { userId, teamId, teamNumber, matchName, matchType, matchNumber, gameData, selectedMotif, timestamp } = data;
+                const { userId, teamId, teamNumber, matchName, matchType, matchNumber, gameData, selectedMotif, timestamp, score } = data;
                 
                 if (!userId || !teamId || !teamNumber || !matchName || !matchType || !matchNumber || !gameData) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -294,6 +294,7 @@ const server = http.createServer((req, res) => {
                     matchNumber,
                     gameData,
                     selectedMotif,
+                    score,
                     timestamp: timestamp || new Date().toISOString(),
                     syncedAt: new Date().toISOString()
                 };
