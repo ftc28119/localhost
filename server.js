@@ -141,7 +141,7 @@ const server = http.createServer((req, res) => {
             console.log(`Request body: ${body}`);
         }
         // 处理注册请求
-        if (req.method === 'POST' && req.url.startsWith('/api/register')) {
+        else if (req.method === 'POST' && req.url === '/api/register') {
             try {
                 const data = JSON.parse(body);
                 console.log('解析后的请求数据:', data);
@@ -267,7 +267,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理保存侦察数据请求
-        else if (req.method === 'POST' && req.url.startsWith('/api/scouting-data')) {
+        else if (req.method === 'POST' && req.url === '/api/scouting-data') {
             try {
                 const data = JSON.parse(body);
                 const { userId, teamId, teamNumber, matchName, matchType, matchNumber, gameData, selectedMotif, timestamp } = data;
