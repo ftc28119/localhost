@@ -113,6 +113,9 @@ function generateInviteCode(length = 8) {
 
 // 创建HTTP服务器
 const server = http.createServer((req, res) => {
+    // 记录所有请求
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    
     // 设置CORS头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -120,6 +123,7 @@ const server = http.createServer((req, res) => {
     
     // 处理OPTIONS请求
     if (req.method === 'OPTIONS') {
+        console.log(`OPTIONS request handled for ${req.url}`);
         res.writeHead(204);
         res.end();
         return;
@@ -132,10 +136,13 @@ const server = http.createServer((req, res) => {
     });
     
     req.on('end', () => {
+        // 记录请求体（如果有的话）
+        if (body) {
+            console.log(`Request body: ${body}`);
+        }
         // 处理注册请求
         if (req.method === 'POST' && req.url === '/api/register') {
             try {
-                console.log('注册请求体:', body);
                 const data = JSON.parse(body);
                 console.log('解析后的请求数据:', data);
                 const { username, password, teamNumber, inviteCode } = data;
