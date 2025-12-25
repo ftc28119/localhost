@@ -141,7 +141,7 @@ const server = http.createServer((req, res) => {
             console.log(`Request body: ${body}`);
         }
         // 处理注册请求
-        else if (req.method === 'POST' && req.url === '/api/register') {
+        if (req.method === 'POST' && (req.url === '/api/register' || req.url.startsWith('/api/register?'))) {
             try {
                 const data = JSON.parse(body);
                 console.log('解析后的请求数据:', data);
@@ -267,7 +267,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理保存侦察数据请求
-        else if (req.method === 'POST' && req.url === '/api/scouting-data') {
+        else if (req.method === 'POST' && (req.url === '/api/scouting-data' || req.url.startsWith('/api/scouting-data?'))) {
             try {
                 const data = JSON.parse(body);
                 const { userId, teamId, teamNumber, matchName, matchType, matchNumber, gameData, selectedMotif, timestamp, score } = data;
@@ -345,7 +345,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理获取所有数据请求（用于后台管理）
-        else if (req.method === 'GET' && req.url === '/api/admin/data') {
+        else if (req.method === 'GET' && (req.url === '/api/admin/data' || req.url.startsWith('/api/admin/data?'))) {
             try {
                 // 从URL查询参数中获取管理员密码
                 // 使用http://localhost:3001作为baseURL只是为了解析查询参数，实际主机和端口不影响功能
@@ -415,7 +415,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理获取用户列表请求
-        else if (req.method === 'GET' && req.url === '/api/users') {
+        else if (req.method === 'GET' && (req.url === '/api/users' || req.url.startsWith('/api/users?'))) {
             try {
                 const users = readUsers();
                 
@@ -469,7 +469,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理获取队伍数据请求（用于前端）
-        else if (req.method === 'GET' && req.url === '/api/teams') {
+        else if (req.method === 'GET' && (req.url === '/api/teams' || req.url.startsWith('/api/teams?'))) {
             try {
                 const teams = readTeams();
                 
@@ -486,7 +486,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理获取侦察数据请求（支持两种路径格式）
-        else if (req.method === 'GET' && (req.url === '/api/scouting-data' || req.url === '/api/scoutingData')) {
+        else if (req.method === 'GET' && (req.url === '/api/scouting-data' || req.url.startsWith('/api/scouting-data?') || req.url === '/api/scoutingData' || req.url.startsWith('/api/scoutingData?'))) {
             try {
                 const scoutingData = readScoutingData();
                 
@@ -506,7 +506,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理登录请求
-        else if (req.method === 'POST' && req.url === '/api/login') {
+        else if (req.method === 'POST' && (req.url === '/api/login' || req.url.startsWith('/api/login?'))) {
             try {
                 const data = JSON.parse(body);
                 const { username, password } = data;
@@ -547,7 +547,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理注销用户请求
-        else if (req.method === 'POST' && req.url === '/api/logout') {
+        else if (req.method === 'POST' && (req.url === '/api/logout' || req.url.startsWith('/api/logout?'))) {
             try {
                 let username = null;
                 
@@ -580,7 +580,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理刷新邀请码请求
-        else if (req.method === 'POST' && req.url === '/api/refresh-invite-code') {
+        else if (req.method === 'POST' && (req.url === '/api/refresh-invite-code' || req.url.startsWith('/api/refresh-invite-code?'))) {
             try {
                 const data = JSON.parse(body);
                 const { username, teamNumber } = data;
@@ -628,7 +628,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 退出队伍
-        else if (req.method === 'POST' && req.url === '/api/leave-team') {
+        else if (req.method === 'POST' && (req.url === '/api/leave-team' || req.url.startsWith('/api/leave-team?'))) {
             try {
                 const data = JSON.parse(body);
                 const { username } = data;
@@ -689,7 +689,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 移除队伍成员（队长权限）
-        else if (req.method === 'POST' && req.url === '/api/remove-team-member') {
+        else if (req.method === 'POST' && (req.url === '/api/remove-team-member' || req.url.startsWith('/api/remove-team-member?'))) {
             try {
                 const data = JSON.parse(body);
                 const { captainUsername, teamNumber, memberUsername } = data;
@@ -758,7 +758,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 验证页面访问密码
-        else if (req.method === 'POST' && req.url === '/api/verify-password') {
+        else if (req.method === 'POST' && (req.url === '/api/verify-password' || req.url.startsWith('/api/verify-password?'))) {
             try {
                 const data = JSON.parse(body);
                 const { password } = data;
@@ -789,7 +789,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 解散队伍功能
-        else if (req.method === 'POST' && req.url === '/api/dissolve-team') {
+        else if (req.method === 'POST' && (req.url === '/api/dissolve-team' || req.url.startsWith('/api/dissolve-team?'))) {
             try {
                 const data = JSON.parse(body);
                 const { username, teamNumber } = data;
@@ -846,7 +846,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 更改密码功能
-        else if (req.method === 'POST' && req.url === '/api/change-password') {
+        else if (req.method === 'POST' && (req.url === '/api/change-password' || req.url.startsWith('/api/change-password?'))) {
             try {
                 const data = JSON.parse(body);
                 const { username, currentPassword, newPassword } = data;
@@ -901,7 +901,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 管理员密码验证功能
-        else if (req.method === 'POST' && req.url === '/api/verify-admin-password') {
+        else if (req.method === 'POST' && (req.url === '/api/verify-admin-password' || req.url.startsWith('/api/verify-admin-password?'))) {
             try {
                 const data = JSON.parse(body);
                 const { password } = data;
@@ -931,7 +931,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 后端注销用户功能
-        else if (req.method === 'POST' && req.url === '/api/delete-user') {
+        else if (req.method === 'POST' && (req.url === '/api/delete-user' || req.url.startsWith('/api/delete-user?'))) {
             try {
                 const data = JSON.parse(body);
                 const { username, password } = data;
@@ -1010,7 +1010,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 管理员删除用户功能
-        else if (req.method === 'POST' && req.url === '/api/admin/delete-user') {
+        else if (req.method === 'POST' && (req.url === '/api/admin/delete-user' || req.url.startsWith('/api/admin/delete-user?'))) {
             try {
                 const data = JSON.parse(body);
                 const { username, password } = data;
