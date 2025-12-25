@@ -312,8 +312,8 @@ const server = http.createServer((req, res) => {
             }
         }
         
-        // 处理获取侦察数据请求
-        else if (req.method === 'GET' && req.url.startsWith('/api/scouting-data')) {
+        // 处理获取侦察数据请求（支持两种路径格式）
+        else if (req.method === 'GET' && (req.url.startsWith('/api/scouting-data') || req.url.startsWith('/api/scoutingData'))) {
             try {
                 const scoutingData = readScoutingData();
                 
@@ -321,7 +321,10 @@ const server = http.createServer((req, res) => {
                 const scoutingDataArray = Object.values(scoutingData);
                 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(scoutingDataArray));
+                res.end(JSON.stringify({
+                    success: true,
+                    data: scoutingDataArray
+                }));
             } catch (error) {
                 console.error('获取侦察数据错误:', error);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -404,6 +407,22 @@ const server = http.createServer((req, res) => {
                 }));
             } catch (error) {
                 console.error('获取队伍数据错误:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+            }
+        }
+        // 处理获取用户列表请求
+        else if (req.method === 'GET' && req.url.startsWith('/api/users')) {
+            try {
+                const users = readUsers();
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    success: true,
+                    users
+                }));
+            } catch (error) {
+                console.error('获取用户列表错误:', error);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, message: '服务器错误' }));
             }
