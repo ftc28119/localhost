@@ -312,26 +312,6 @@ const server = http.createServer((req, res) => {
             }
         }
         
-        // 处理获取侦察数据请求（支持两种路径格式）
-        else if (req.method === 'GET' && (req.url.startsWith('/api/scouting-data') || req.url.startsWith('/api/scoutingData'))) {
-            try {
-                const scoutingData = readScoutingData();
-                
-                // 将对象转换为数组返回
-                const scoutingDataArray = Object.values(scoutingData);
-                
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({
-                    success: true,
-                    data: scoutingDataArray
-                }));
-            } catch (error) {
-                console.error('获取侦察数据错误:', error);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, message: '获取数据失败', error: error.message }));
-            }
-        }
-        
         // 处理删除侦察数据请求
         else if (req.method === 'DELETE' && req.url.startsWith('/api/scouting-data/')) {
             try {
@@ -364,7 +344,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理获取所有数据请求（用于后台管理）
-        else if (req.method === 'GET' && req.url.startsWith('/api/admin/data')) {
+        else if (req.method === 'GET' && req.url === '/api/admin/data') {
             try {
                 // 从URL查询参数中获取管理员密码
                 const url = new URL(req.url, 'http://localhost:3001');
@@ -395,24 +375,44 @@ const server = http.createServer((req, res) => {
             }
         }
         
-        // 处理获取队伍数据请求（用于前端）
-        else if (req.method === 'GET' && req.url.startsWith('/api/teams')) {
+        // 处理获取特定用户信息请求
+        else if (req.method === 'GET' && req.url.startsWith('/api/users/')) {
             try {
-                const teams = readTeams();
+                const username = decodeURIComponent(req.url.split('/').pop());
+                
+                if (!username) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户名不能为空' }));
+                    return;
+                }
+                
+                const users = readUsers();
+                const user = users[username];
+                
+                if (!user) {
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '用户不存在' }));
+                    return;
+                }
                 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({
-                    success: true,
-                    teams
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    user: {
+                        username: user.username,
+                        team: user.team,
+                        isCaptain: user.isCaptain,
+                        createdAt: user.createdAt
+                    }
                 }));
             } catch (error) {
-                console.error('获取队伍数据错误:', error);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, message: '服务器错误' }));
             }
         }
+        
         // 处理获取用户列表请求
-        else if (req.method === 'GET' && req.url.startsWith('/api/users')) {
+        else if (req.method === 'GET' && req.url === '/api/users') {
             try {
                 const users = readUsers();
                 
@@ -428,8 +428,82 @@ const server = http.createServer((req, res) => {
             }
         }
         
+        // 处理获取特定队伍信息请求
+        else if (req.method === 'GET' && req.url.startsWith('/api/team/')) {
+            try {
+                const teamNumber = req.url.split('/').pop();
+                
+                if (!teamNumber) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队伍编号不能为空' }));
+                    return;
+                }
+                
+                const teams = readTeams();
+                const team = teams[teamNumber];
+                
+                if (!team) {
+                    res.writeHead(404, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: '队伍不存在' }));
+                    return;
+                }
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ 
+                    success: true, 
+                    team: {
+                        teamNumber: team.teamNumber,
+                        captain: team.captain,
+                        members: team.members,
+                        inviteCode: team.inviteCode,
+                        createdAt: team.createdAt
+                    }
+                }));
+            } catch (error) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+            }
+        }
+        
+        // 处理获取队伍数据请求（用于前端）
+        else if (req.method === 'GET' && req.url === '/api/teams') {
+            try {
+                const teams = readTeams();
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    success: true,
+                    teams
+                }));
+            } catch (error) {
+                console.error('获取队伍数据错误:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+            }
+        }
+        
+        // 处理获取侦察数据请求（支持两种路径格式）
+        else if (req.method === 'GET' && (req.url === '/api/scouting-data' || req.url === '/api/scoutingData')) {
+            try {
+                const scoutingData = readScoutingData();
+                
+                // 将对象转换为数组返回
+                const scoutingDataArray = Object.values(scoutingData);
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    success: true,
+                    data: scoutingDataArray
+                }));
+            } catch (error) {
+                console.error('获取侦察数据错误:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '获取数据失败', error: error.message }));
+            }
+        }
+        
         // 处理登录请求
-        else if (req.method === 'POST' && req.url.startsWith('/api/login')) {
+        else if (req.method === 'POST' && req.url === '/api/login') {
             try {
                 const data = JSON.parse(body);
                 const { username, password } = data;
@@ -470,7 +544,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理注销用户请求
-        else if (req.method === 'POST' && req.url.startsWith('/api/logout')) {
+        else if (req.method === 'POST' && req.url === '/api/logout') {
             try {
                 let username = null;
                 
@@ -503,7 +577,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 处理刷新邀请码请求
-        else if (req.method === 'POST' && req.url.startsWith('/api/refresh-invite-code')) {
+        else if (req.method === 'POST' && req.url === '/api/refresh-invite-code') {
             try {
                 const data = JSON.parse(body);
                 const { username, teamNumber } = data;
@@ -550,45 +624,8 @@ const server = http.createServer((req, res) => {
             }
         }
         
-        // 获取队伍信息
-        else if (req.method === 'GET' && req.url.startsWith('/api/team/')) {
-            try {
-                const teamNumber = req.url.split('/').pop();
-                
-                if (!teamNumber) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, message: '队伍编号不能为空' }));
-                    return;
-                }
-                
-                const teams = readTeams();
-                const team = teams[teamNumber];
-                
-                if (!team) {
-                    res.writeHead(404, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false, message: '队伍不存在' }));
-                    return;
-                }
-                
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ 
-                    success: true, 
-                    team: {
-                        teamNumber: team.teamNumber,
-                        captain: team.captain,
-                        members: team.members,
-                        inviteCode: team.inviteCode,
-                        createdAt: team.createdAt
-                    }
-                }));
-            } catch (error) {
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, message: '服务器错误' }));
-            }
-        }
-        
         // 退出队伍
-        else if (req.method === 'POST' && req.url.startsWith('/api/leave-team')) {
+        else if (req.method === 'POST' && req.url === '/api/leave-team') {
             try {
                 const data = JSON.parse(body);
                 const { username } = data;
@@ -649,7 +686,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 移除队伍成员（队长权限）
-        else if (req.method === 'POST' && req.url.startsWith('/api/remove-team-member')) {
+        else if (req.method === 'POST' && req.url === '/api/remove-team-member') {
             try {
                 const data = JSON.parse(body);
                 const { captainUsername, teamNumber, memberUsername } = data;
@@ -718,7 +755,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 验证页面访问密码
-        else if (req.method === 'POST' && req.url.startsWith('/api/verify-password')) {
+        else if (req.method === 'POST' && req.url === '/api/verify-password') {
             try {
                 const data = JSON.parse(body);
                 const { password } = data;
@@ -749,7 +786,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 解散队伍功能
-        else if (req.method === 'POST' && req.url.startsWith('/api/dissolve-team')) {
+        else if (req.method === 'POST' && req.url === '/api/dissolve-team') {
             try {
                 const data = JSON.parse(body);
                 const { username, teamNumber } = data;
@@ -806,7 +843,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 更改密码功能
-        else if (req.method === 'POST' && req.url.startsWith('/api/change-password')) {
+        else if (req.method === 'POST' && req.url === '/api/change-password') {
             try {
                 const data = JSON.parse(body);
                 const { username, currentPassword, newPassword } = data;
@@ -861,7 +898,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 管理员密码验证功能
-        else if (req.method === 'POST' && req.url.startsWith('/api/verify-admin-password')) {
+        else if (req.method === 'POST' && req.url === '/api/verify-admin-password') {
             try {
                 const data = JSON.parse(body);
                 const { password } = data;
@@ -891,7 +928,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 后端注销用户功能
-        else if (req.method === 'POST' && req.url.startsWith('/api/delete-user')) {
+        else if (req.method === 'POST' && req.url === '/api/delete-user') {
             try {
                 const data = JSON.parse(body);
                 const { username, password } = data;
@@ -970,7 +1007,7 @@ const server = http.createServer((req, res) => {
         }
         
         // 管理员删除用户功能
-        else if (req.method === 'POST' && req.url.startsWith('/api/admin/delete-user')) {
+        else if (req.method === 'POST' && req.url === '/api/admin/delete-user') {
             try {
                 const data = JSON.parse(body);
                 const { username, password } = data;
