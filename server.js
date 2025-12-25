@@ -347,7 +347,9 @@ const server = http.createServer((req, res) => {
         else if (req.method === 'GET' && req.url === '/api/admin/data') {
             try {
                 // 从URL查询参数中获取管理员密码
-                const url = new URL(req.url, 'http://localhost:3001');
+                // 使用http://localhost:3001作为baseURL只是为了解析查询参数，实际主机和端口不影响功能
+                // 因为URL构造函数需要baseURL来解析相对路径，但我们只关心查询参数
+                const url = new URL(req.url, 'http://localhost:8080');
                 const password = url.searchParams.get('password');
                 
                 // 验证管理员密码
