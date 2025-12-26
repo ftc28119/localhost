@@ -1087,6 +1087,25 @@ const server = http.createServer((req, res) => {
             }
         }
         
+        // 处理根路径请求
+        else if (req.method === 'GET' && req.url === '/') {
+            const filePath = path.join(__dirname, 'index.html');
+            
+            if (fs.existsSync(filePath)) {
+                fs.readFile(filePath, 'utf8', (err, data) => {
+                    if (err) {
+                        res.writeHead(500, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: false, message: '服务器错误' }));
+                        return;
+                    }
+                    res.writeHead(200, { 'Content-Type': 'text/html' });
+                    res.end(data);
+                });
+            } else {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '文件不存在' }));
+            }
+        }
         // 处理静态文件请求
         else if (req.method === 'GET' && req.url.endsWith('.html')) {
             const fileName = req.url.substring(1); // 移除开头的斜杠
