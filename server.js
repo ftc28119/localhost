@@ -145,7 +145,7 @@ const server = http.createServer((req, res) => {
             try {
                 const data = JSON.parse(body);
                 console.log('解析后的请求数据:', data);
-                const { username, password, teamNumber, inviteCode } = data;
+                const { username, password, teamNumber, inviteCode, alias } = data;
                 
                 if (!username || !password) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -233,6 +233,7 @@ const server = http.createServer((req, res) => {
                 const newUser = {
                     username,
                     password: hashedPassword,
+                    alias,
                     team,
                     isCaptain,
                     createdAt: new Date().toISOString()
@@ -248,7 +249,7 @@ const server = http.createServer((req, res) => {
                 if (saveResult) {
                     // 数据保存成功，返回响应
                     res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: true, message: '注册成功', user: { username: newUser.username, team: newUser.team, isCaptain: newUser.isCaptain } }));
+                    res.end(JSON.stringify({ success: true, message: '注册成功', user: { username: newUser.username, alias: newUser.alias, team: newUser.team, isCaptain: newUser.isCaptain } }));
                     console.log('注册响应已发送');
                 } else {
                     // 数据保存失败，返回错误响应
@@ -538,7 +539,7 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({ 
                     success: true, 
                     message: '登录成功', 
-                    user: { username: user.username, team: user.team } 
+                    user: { username: user.username, alias: user.alias, team: user.team } 
                 }));
             } catch (error) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
