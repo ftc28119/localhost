@@ -1116,8 +1116,8 @@ const server = http.createServer((req, res) => {
 });
 
 // 启动服务器
-// 使用环境变量端口或默认端口（28119），以便在云服务上正常运行
-const PORT = process.env.PORT || 28119;
+// 使用环境变量端口或默认端口（8080），以便在云服务上正常运行
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`服务器运行在 http://0.0.0.0:${PORT}`);
     console.log(`可以通过 http://localhost:${PORT} 或 http://<本机IP地址>:${PORT} 访问`);
