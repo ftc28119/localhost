@@ -313,6 +313,21 @@ const server = http.createServer((req, res) => {
             }
         }
         
+        // 处理获取所有侦察数据请求
+        else if (req.method === 'GET' && (req.url === '/api/scouting-data' || req.url.startsWith('/api/scouting-data?'))) {
+            try {
+                const scoutingData = readScoutingData();
+                // 将对象转换为数组，方便前端处理
+                const dataArray = Object.values(scoutingData);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, data: dataArray }));
+            } catch (error) {
+                console.error('获取侦察数据错误:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: '获取数据失败', error: error.message }));
+            }
+        }
+        
         // 处理删除侦察数据请求
         else if (req.method === 'DELETE' && req.url.startsWith('/api/scouting-data/')) {
             try {
