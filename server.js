@@ -9,7 +9,7 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 const PAGE_ACCESS_PASSWORD = 'ftc2025'; // 默认密码，可以在后续优化为可配置的
 
 // 管理员访问密码
-const ADMIN_PASSWORD = 'admin28119'; // 默认管理员密码，可以在后续优化为可配置的
+const ADMIN_PASSWORD = '281192024'; // 默认管理员密码，可以在后续优化为可配置的
 
 // 读取所有数据
 function readData() {
